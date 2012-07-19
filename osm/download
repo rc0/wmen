@@ -1,0 +1,23 @@
+#!/bin/sh
+
+download () {
+  x=$1
+  y=$2
+  z=6
+  url=http://a.tile.openstreetmap.org/$z/$x/$y.png
+  path=${x}_${y}.png
+  if [ -f $path ]
+  then
+    echo "Already have $path"
+  else
+    wget -O $path $url
+  fi
+}
+
+for x in 30 31 32
+do
+  for y in 18 19 20 21
+  do
+  download $x $y
+  done
+done

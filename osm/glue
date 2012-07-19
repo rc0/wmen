@@ -1,0 +1,11 @@
+#!/bin/sh
+
+montage -geometry 256x -border 0 -tile 3x4 \
+	30_18.png 31_18.png 32_18.png \
+	30_19.png 31_19.png 32_19.png \
+	30_20.png 31_20.png 32_20.png \
+	30_21.png 31_21.png 32_21.png \
+	output.png
+
+convert output.png -fill white -opaque '#b5d0d0' -gamma 0.6 uk12.png
+
