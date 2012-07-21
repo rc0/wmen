@@ -452,6 +452,9 @@ static void print_model_java_inner(char foo, const double m[OX][OY]) {/*{{{*/
 }
 /*}}}*/
 static void print_model_java(const struct model *model) {/*{{{*/
+  printf("double alpha, beta;\n");
+  printf("alpha = %.3f * (X - %.10f);\n", model->SX, model->X0);
+  printf("beta = %.3f * (Y - %.10f);\n", model->SY, model->Y0);
   print_model_java_inner('E', model->e);
   print_model_java_inner('N', model->n);
 }
@@ -482,6 +485,9 @@ static void print_model_estrin_inner(const double m[OX][OY], const char *res)/*{
 /*}}}*/
 static void print_model_estrin(const struct model *model)/*{{{*/
 {
+  printf("double alpha, beta;\n");
+  printf("alpha = %.3f * (X - %.10f);\n", model->SX, model->X0);
+  printf("beta = %.3f * (Y - %.10f);\n", model->SY, model->Y0);
   print_model_estrin_inner(model->e, "E");
   print_model_estrin_inner(model->n, "N");
 }
