@@ -350,7 +350,8 @@ The error in the phone's GPS position (perhaps 2-3 metres at best, 10-20 metres
 under some conditions) is expected to dominate the error achieved by this
 approximation\footnote{Also, once the error drops below 1 metre, issues such as
 the difference between the WGS84 and ETRS89 systems would need to be factored
-in.}.
+in.}.  See section \ref{sec:implementation} for an alternative form perhaps
+more suitable for hardware.
 
 \begin{figure}[htb]
   \begin{subfigure}[b]{0.4\textwidth}
@@ -365,10 +366,10 @@ in.}.
   \begin{subfigure}[b]{0.4\textwidth}
   \centering
   \fbox{
-    \input wm_to_grid_10m.tex
+    \input wm_to_grid_5m.tex
   }
-  \caption{achieved using equations \eqref{eqn:east10} and \eqref{eqn:north10}}
-  \label{fig:ten-metre-model}
+  \caption{achieved using equations \eqref{eqn:east5} and \eqref{eqn:north5}}
+  \label{fig:5-metre-model}
 \end{subfigure}
   \caption{Positional error (in metres against OSTN02)}
 \hrulefill
@@ -377,47 +378,54 @@ in.}.
 \section {Simplified models}
 
 If lower accuracy is acceptable, formulae with fewer terms can be used.  For
-example, the following formulae will yield no worse than 10 metre accuracy
-across Great Britain, as shown in figure \ref{fig:ten-metre-model}.
+example, the following formulae will yield no worse than 5 metre accuracy
+across the OSTN02-defined region, as shown in figure \ref{fig:5-metre-model}.
+The error is under 4m on land; allowing for a 6m error in the GPS, these
+formulae provide an estimate within 10m --- sufficient to be within $\pm{}1$
+when quoting an 8-figure (10x10m) grid reference.
 
 \begin{align}
-E_0 &= 400001.47 -22.67\beta\nonumber \\
-E_1 &= 370528.60 +53326.92\beta +1983.91\beta^2 -241.27\beta^3\nonumber \\
-E_2 &= 7.42\nonumber \\
+E_0 &= 400001.47 -17.07\beta\nonumber \\
+E_1 &= 370523.38 +53326.92\beta +2025.68\beta^2 -241.27\beta^3 -41.77\beta^4\nonumber \\
+E_2 &= -11.21\beta +14.84\beta^2\nonumber \\
 E_3 &= -237.68 +82.89\beta +41.21\beta^2\nonumber \\
 E &= E_0 +E_1\alpha +E_2\alpha^2 +E_3\alpha^3
-  \label{eqn:east10}
+  \label{eqn:east5}
 \\[1ex]
 N_0 &= 649998.33 -626496.42\beta -44898.11\beta^2 -1088.27\beta^3 +107.47\beta^4\nonumber \\
-N_1 &= -8.90\nonumber \\
+N_1 &= -13.90 +10.01\beta^2\nonumber \\
 N_2 &= 15782.38 +1220.67\beta -217.21\beta^2 -49.59\beta^3\nonumber \\
 N &= N_0 +N_1\alpha +N_2\alpha^2
-  \label{eqn:north10}
+  \label{eqn:north5}
 \end{align}
 
-For an even cruder approximation, with an error between 70m and 100m at the edges
-as shown in figure \ref{fig:hundred-metre-model}, the following formulae can be
+For an even cruder approximation, with an error under 35m at the edges
+as shown in figure \ref{fig:35-metre-model}, the following formulae can be
 used:
 \begin{align}
-E_0 &= 400005.18\nonumber \\
-E_1 &= 370350.34 +53389.09\beta +2014.82\beta^2 -241.27\beta^3\nonumber \\
-E &= E_0 +E_1\alpha
-  \label{eqn:east100}
+E_0 &= 400005.18 -22.67\beta\nonumber \\
+E_1 &= 370528.60 +53389.09\beta +2014.82\beta^2 -241.27\beta^3\nonumber \\
+E_3 &= -237.68\nonumber \\
+E &= E_0 +E_1\alpha +E_3\alpha^3
+  \label{eqn:east35}
 \\[2ex]
 N_0 &= 649984.89 -626496.42\beta -44790.64\beta^2 -1088.27\beta^3\nonumber \\
 N_2 &= 15782.38 +1183.47\beta -217.21\beta^2\nonumber \\
 N &= N_0 +N_2\alpha^2
-  \label{eqn:north100}
+  \label{eqn:north35}
 \end{align}
+
+These should be sufficient to calculate the nearest 6-figure (100x100m) grid
+reference --- at least as accurately as the eye would estimate from a map.
 
 \begin{figure}[htb]
   \begin{subfigure}[b]{0.4\textwidth}
   \centering
   \fbox{
-    \input wm_to_grid_100m.tex
+    \input wm_to_grid_35m.tex
   }
-  \caption{Positional error (in metres against OSTN02) achieved using equations \eqref{eqn:east100} and \eqref{eqn:north100}}
-  \label{fig:hundred-metre-model}
+  \caption{Positional error (in metres against OSTN02) achieved using equations \eqref{eqn:east35} and \eqref{eqn:north35}}
+  \label{fig:35-metre-model}
   \end{subfigure}
 \gap
   \begin{subfigure}[b]{0.4\textwidth}
@@ -1221,6 +1229,7 @@ the $\sin$, $\cos$ and $\tan$ (and their powers) for several angles, as well as
 taking square roots.  The reader is directed to \cite{gcs}.
 
 \section {Implementation}
+\label{sec:implementation}
 This section considers an implementation of equations \eqref{eqn:east1} and
 \eqref{eqn:north1}.  If the target machine has a fused multiply-accumulate
 instruction, the following representation may be attractive:
