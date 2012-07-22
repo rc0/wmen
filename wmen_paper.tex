@@ -207,7 +207,7 @@ error is about 3 metres at Land's End.  Given that the height accuracy of a
 phone's GPS is quoted as being far worse than this, and only an approximate
 height above sea level was sought, this approximation was considered
 sufficient, especially as equation \eqref{eqn:odn} is so cheap to evaluate.
-Table \ref{tbl:contour_key} on page \pageref{tbl:contour_key} shows the
+Section \ref{sec:contour-key} on page \pageref{sec:contour-key} shows the
 representations of the contours.
 
 % ----------------------------------------------------------------------------
@@ -1083,8 +1083,8 @@ Y_4 &= -121.72 -88.91\nu\nonumber \\
 \end{align}
 
 \section {Contour key}
-\begin{table}[h]
-\centering
+\label{sec:contour-key}
+{\centering
 \begin{tabular}{r l}
 \toprule
 \textbf{Level} & \textbf{Sample} \\
@@ -1138,10 +1138,9 @@ Y_4 &= -121.72 -88.91\nu\nonumber \\
 250.00 & {\tikz \draw [green!70!black,ultra thick] (0cm,1ex) node[fill=white,fill opacity=0.7,text opacity=1,font=\tiny,text=green!70!black,inner sep=1pt,draw=green!70!black,thin,draw opacity=1] {250}-- ++(1cm,0cm);}\\
 \bottomrule
 \end{tabular}
-\caption{Key to the contour levels in the maps}
-\label{tbl:contour_key}
+
 \hrulefill
-\end{table}
+}
 
 \section {Worked example}
 This section uses the Caister Water Tower example from appendix A of
@@ -1232,9 +1231,15 @@ taking square roots.  The reader is directed to \cite{gcs}.
 \label{sec:implementation}
 This section considers an implementation of equations \eqref{eqn:east1} and
 \eqref{eqn:north1}.  If the target machine has a fused multiply-accumulate
-instruction, the following representation may be attractive:
-\begin{quote}
-\small
+instruction, the representations shown in figure \ref{fig:fused-mac} may be
+attractive:
+
+\begin{figure}[htb]
+
+  \hrulefill
+
+  \begin{subfigure}[b]{0.45\textwidth}
+\footnotesize
 \begin{verbatim}
 double t0, t1, t2, t3, t4, t5, t6, t7;
 double t8, t9, t10, t11, t12, t13;
@@ -1284,7 +1289,50 @@ t34 = (-4.08) + (-4.81)*alpha;
 t35 = t33 + t34*beta4;
 N = t30 + t35*alpha4;
 \end{verbatim}
-\end{quote}
+\caption{1m model (equations \eqref{eqn:east1} \& \eqref{eqn:north1})}
+\end{subfigure}
+  \begin{subfigure}[b]{0.45\textwidth}
+    \footnotesize
+    \begin{verbatim}
+double t90, t91, t92, t93, t94, t95, t96, t97;
+double t98, t99, t100;
+double t101, t102, t103, t104, t105, t106, t107, t108;
+double t109;
+double alpha2 = alpha * alpha;
+double beta2 = beta * beta;
+double beta4 = beta2 * beta2;
+t90 = (400001.47) + (-17.07)*beta;
+t91 = (370523.38) + (53326.92)*beta;
+t92 = (2025.68) + (-241.27)*beta;
+t93 = t91 + t92*beta2;
+t94 = t93 + (-41.77)*beta4;
+t95 = t90 + t94*alpha;
+t96 = (-11.21)*beta;
+t97 = t96 + (14.84)*beta2;
+t98 = (-237.68) + (82.89)*beta;
+t99 = t98 + (41.21)*beta2;
+t100 = t97 + t99*alpha;
+E = t95 + t100*alpha2;
+t101 = (649998.33) + (-13.90)*alpha;
+t102 = t101 + (15782.38)*alpha2;
+t103 = (-626496.42) + (1220.67)*alpha2;
+t104 = t102 + t103*beta;
+t105 = (-44898.11) + (10.01)*alpha;
+t106 = t105 + (-217.21)*alpha2;
+t107 = (-1088.27) + (-49.59)*alpha2;
+t108 = t106 + t107*beta;
+t109 = t104 + t108*beta2;
+N = t109 + (107.47)*beta4;
+    \end{verbatim}
+\caption{5m model (equations \eqref{eqn:east5} \& \eqref{eqn:north5})}
+\end{subfigure}
+
+  \caption{Fused-MAC based implementations}
+  \label{fig:fused-mac}
+
+  \hrulefill
+
+\end{figure}
 
 The number of add operations is unavoidable given the number of non-zero
 coefficients in the equations.  However in this representation, the multiplies
