@@ -8,6 +8,7 @@
 \usepackage{subcaption}
 \usepackage{rotating}
 \usepackage{gensymb}
+\usepackage{lettrine}
 \usepackage{tikz}
 \usetikzlibrary{arrows,positioning,shapes}
 
@@ -79,13 +80,11 @@
 \clearpage
 
 \section {Background and aims}
-Whilst writing a mapping application to run on an Android phone, the author
-wanted two features:
-\begin{enumerate}
-\item To display height above sea level, having noticed that the `height'
-provided by the GPS was somewhat higher than the figure shown on maps
-\item To display the OS grid reference of a point on the map
-\end{enumerate}
+\lettrine{T}{he} work described in this note arose as a side-project of
+developing an Android mapping application which makes use of the GPS features
+in a phone.  Two features were sought: firstly, a means to display realistic
+height above sea level; and secondly, a means to show the Ordnance Survey grid
+reference of the location in the centre of the map being displayed.
 
 The basic method described in the Ordnance Survey documentation (ref [1]) for
 these conversions involve a significant amount of calculation --- see for
@@ -237,6 +236,11 @@ such as OpenStreetMap.  Given latitude $M$ and longitude $L$, in
         1 - \frac{1}{\pi} \ln \left(
           \frac{1 + \sin{M}}{\cos{M}}
         \right)
+        \right) \\
+    \textbf{or even } Y & = \frac{1}{2} \left(
+        1 - \frac{1}{\pi} \ln \left[
+          \tan\left(\frac{M}{2} + \frac{\pi}{4}\right)
+        \right]
         \right)
 \end{align}
 
@@ -1019,22 +1023,24 @@ to generate the following models from $(\eta,\nu) \mapsto (X,Y)$.
 The following formulae will calculate $(X,Y)$ accurate to under a metre across
 GB, as shown in figure \ref{fig:grid_to_wm_1m}:
 \begin{align}
-X_0 &= 12361001.62 -19.66\nu -2.24\nu^2\nonumber \\
-X_1 &= 442441.04 +66066.30\nu +12171.89\nu^2 +2057.38\nu^3 +364.45\nu^4 +62.11\nu^5\nonumber \\
-X_2 &= -2.52 -23.19\nu -23.76\nu^2 +3.72\nu^3\nonumber \\
-X_3 &= -1540.23 -778.77\nu -273.35\nu^2 -63.49\nu^3 -25.26\nu^4 -12.21\nu^5\nonumber \\
-X_4 &= 7.76\nu^3 +6.93\nu^4\nonumber \\
-X_5 &= 10.01 +12.09\nu^4 +10.61\nu^5\nonumber \\
-25000000 X &= X_0 +X_1\eta +X_2\eta^2 +X_3\eta^3 +X_4\eta^4 +X_5\eta^5
+X_0 &= 12361001.64 -19.95\nu -2.16\nu^2\nonumber \\
+X_1 &= 442441.04 +66068.81\nu +12171.85\nu^2 +2060.29\nu^3 +364.74\nu^4 +62.14\nu^5\nonumber \\
+X_2 &= -2.66 -21.75\nu -26.30\nu^2 +4.95\nu^3\nonumber \\
+X_3 &= -1540.21 -789.08\nu -273.65\nu^2 -74.34\nu^3 -24.63\nu^4 -11.51\nu^5\nonumber \\
+X_4 &= 8.65\nu^2 +3.01\nu^3 +4.68\nu^4\nonumber \\
+X_5 &= 9.90 +10.87\nu +5.54\nu^2 -9.87\nu^4\nonumber \\
+X_6 &= -22.05\nu^4 -16.00\nu^5\nonumber \\
+25000000 X &= X_0 +X_1\eta +X_2\eta^2 +X_3\eta^3 +X_4\eta^4 +X_5\eta^5 +X_6\eta^6
   \label{eqn:x1}
 \\[1ex]
-Y_0 &= 7816596.43 -720504.09\nu -53575.89\nu^2 -6596.44\nu^3 -830.91\nu^4 -117.01\nu^5 -15.94\nu^6\nonumber \\
-Y_1 &= -13.88 -5.83\nu +4.10\nu^2 +4.32\nu^3\nonumber \\
-Y_2 &= 20368.69 +7485.47\nu +1909.20\nu^2 +454.99\nu^3 +98.62\nu^4 +23.58\nu^5\nonumber \\
-Y_3 &= -9.34 -12.10\nu +26.34\nu^2 +23.54\nu^3 -5.75\nu^4\nonumber \\
-Y_4 &= -119.10 -84.19\nu -41.68\nu^2 -7.53\nu^3 +20.95\nu^4 +15.10\nu^5\nonumber \\
-Y_5 &= 14.47\nu^4 +30.69\nu^5 +14.37\nu^6\nonumber \\
-25000000 Y &= Y_0 +Y_1\eta +Y_2\eta^2 +Y_3\eta^3 +Y_4\eta^4 +Y_5\eta^5
+Y_0 &= 7816596.48 -720504.04\nu -53576.05\nu^2 -6596.65\nu^3 -831.16\nu^4 -116.98\nu^5 -15.93\nu^6\nonumber \\
+Y_1 &= -14.50 -7.04\nu +1.57\nu^2 +2.51\nu^3\nonumber \\
+Y_2 &= 20367.72 +7484.23\nu +1912.75\nu^2 +459.82\nu^3 +102.62\nu^4 +22.39\nu^5\nonumber \\
+Y_3 &= -6.82 -8.27\nu +33.93\nu^2 +34.62\nu^3\nonumber \\
+Y_4 &= -116.53 -78.85\nu -47.55\nu^2 -31.28\nu^3 -9.04\nu^4 +24.98\nu^5 +13.80\nu^6\nonumber \\
+Y_5 &= -14.96\nu^2 -24.45\nu^3 +12.27\nu^5\nonumber \\
+Y_6 &= -27.92\nu^5 -20.62\nu^6\nonumber \\
+25000000 Y &= Y_0 +Y_1\eta +Y_2\eta^2 +Y_3\eta^3 +Y_4\eta^4 +Y_5\eta^5 +Y_6\eta^6
   \label{eqn:y1}
 \end{align}
 
@@ -1066,18 +1072,18 @@ with fewer terms is given by equations \eqref{eqn:x10} and \eqref{eqn:y10}.
 The error, below 10m across GB, is shown in figure \ref{fig:grid_to_wm_10m}.
 
 \begin{align}
-X_0 &= 12360998.48 -27.68\nu\nonumber \\
-X_1 &= 442437.92 +66047.92\nu +12171.89\nu^2 +2130.87\nu^3 +360.67\nu^4\nonumber \\
-X_2 &= -16.83\nu^2\nonumber \\
-X_3 &= -1526.46 -779.10\nu -283.50\nu^2 -62.17\nu^3\nonumber \\
+X_0 &= 12361000.62 -18.67\nu\nonumber \\
+X_1 &= 442437.95 +66046.00\nu +12170.12\nu^2 +2137.96\nu^3 +367.83\nu^4\nonumber \\
+X_2 &= -25.16\nu -33.08\nu^2\nonumber \\
+X_3 &= -1527.83 -771.91\nu -266.72\nu^2 -88.72\nu^3 -36.97\nu^4\nonumber \\
 25000000 X &= X_0 +X_1\eta +X_2\eta^2 +X_3\eta^3
   \label{eqn:x10}
 \\[1ex]
-Y_0 &= 7816595.94 -720504.09\nu -53564.33\nu^2 -6597.86\nu^3 -854.82\nu^4 -117.01\nu^5\nonumber \\
-Y_1 &= -20.97 -8.99\nu\nonumber \\
-Y_2 &= 20368.69 +7478.10\nu +1888.46\nu^2 +495.81\nu^3 +98.62\nu^4\nonumber \\
-Y_3 &= -24.09\nu +10.49\nu^2 +71.49\nu^3 +45.02\nu^4\nonumber \\
-Y_4 &= -121.72 -88.91\nu\nonumber \\
+Y_0 &= 7816595.96 -720504.04\nu -53566.72\nu^2 -6596.65\nu^3 -856.02\nu^4 -117.85\nu^5\nonumber \\
+Y_1 &= -16.49 -9.80\nu +11.43\nu^2\nonumber \\
+Y_2 &= 20368.08 +7472.33\nu +1906.22\nu^2 +507.44\nu^3 +120.02\nu^4\nonumber \\
+Y_3 &= 23.24\nu^3\nonumber \\
+Y_4 &= -117.07 -73.57\nu -37.92\nu^2 -52.40\nu^3 -34.72\nu^4\nonumber \\
 25000000 Y &= Y_0 +Y_1\eta +Y_2\eta^2 +Y_3\eta^3 +Y_4\eta^4
   \label{eqn:y10}
 \end{align}
