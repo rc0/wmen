@@ -25,7 +25,9 @@
 * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * */
 
-/* Produce contour plots of E,N deltas between ITRS and ETRS89
+/* Generate conversions between ITRS2005 and ETRS89 -based Eastings, Northings,
+ * as a function of WM.  These corrections could then be rolled into the
+ * formulae out of wm_to_grid, if desired.
  * */
 
 #include <stdio.h>
@@ -37,7 +39,7 @@
 #include "contour.h"
 #include "osxx02.h"
 
-static int get_itrs(double lat, double lon, double *Ei, double *Ni)
+static int get_itrs(double lat, double lon, double *Ei, double *Ni)/*{{{*/
 {
   struct llh itrs;
   struct en en_itrs;
@@ -52,8 +54,8 @@ static int get_itrs(double lat, double lon, double *Ei, double *Ni)
   *Ni = en_osgb.N;
   return 1;
 }
-
-static int get_etrs89(double lat, double lon, int year, double *Ee89, double *Ne89)
+/*}}}*/
+static int get_etrs89(double lat, double lon, double year, double *Ee89, double *Ne89)/*{{{*/
 {
   struct llh itrs;
   struct llh etrs89;
@@ -76,7 +78,7 @@ static int get_etrs89(double lat, double lon, int year, double *Ee89, double *Ne
   *Ne89 = en_osgb.N;
   return 1;
 }
-
+/*}}}*/
 /* Convert the coordinates to web mercator */
 static void remap_clines(const struct cline *lines, double lonmin, double lonstep, double latmin, double latstep)/*{{{*/
 {
@@ -102,10 +104,10 @@ static void remap_clines(const struct cline *lines, double lonmin, double lonste
 #define THICK1 "thin", 1.0
 #define THICK2 "thick", 1.4
 
-
 #define N_EAST 12
+#define N_NORTH 6
 
-struct level east_levels[N_EAST] = 
+struct level east_levels[N_EAST] = /*{{{*/
 {
   {C7, -0.23, THICK2},
   {C7, -0.24, THICK2},
@@ -120,9 +122,8 @@ struct level east_levels[N_EAST] =
   {C7, -0.33, THICK2},
   {C7, -0.34, THICK2}
 };
-
-#define N_NORTH 6
-struct level north_levels[N_NORTH] = 
+/*}}}*/
+struct level north_levels[N_NORTH] = /*{{{*/
 {
   {C7, -0.40, THICK2},
   {C7, -0.41, THICK2},
@@ -131,10 +132,9 @@ struct level north_levels[N_NORTH] =
   {C7, -0.44, THICK2},
   {C7, -0.45, THICK2},
 };
-
-int main (int argc, char **argv)
+/*}}}*/
+static void contours(void)/*{{{*/
 {
-
   double lonmin, lonmax;
   double latmin, latmax;
   double step;
@@ -213,6 +213,181 @@ int main (int argc, char **argv)
 
   free_cdata(outer_e);
   free_cdata(outer_n);
+}
+/*}}}*/
+
+#define OX 2
+#define OY 2
+#define OT 2
+#define OXY (OX*OY)
+#define OXYT (OX*OY*OT)
+
+struct model/*{{{*/
+{
+  double X0, Y0, T0;
+  double SX, SY, ST;
+  /* TODO : not even clear that the same order polynomials are appropriate for
+   * both of these? */
+  double e[OX][OY][OT];
+  double n[OX][OY][OT];
+};
+
+/*}}}*/
+static void fit(struct model *model)
+{
+  double latmin = 49.8;
+  double latmax = 61.0;
+  double lonmin, lonmax;
+  double tmin, tmax, tstep;
+  double step = 0.1;
+
+  double lat, lon;
+  struct llh osgb, wgs;
+  struct mxy mxy;
+  struct en en;
+  double dx, dy, dt;
+  long double xx[2*OX-1], yy[2*OY-1], tt[2*OT-1];
+  long double LE[OXYT], LN[OXYT], RE[OXYT], RN[OXYT];
+  Matrix M;
+  int i, j, k, m, n, u, v;
+  double t;
+
+  tmin = 1989.0;
+  tmax = 2089.001;
+  tstep = 10.0;
+
+  for (i=0; i<OXYT; i++) {
+    for (j=0; j<OXYT; j++) {
+      M[i][j] = 0.0;
+    }
+  }
+  for (i=0; i<OXYT; i++) {
+    RE[i] = 0.0;
+    RN[i] = 0.0;
+  }
+
+#if 1
+  model->X0 = 0.494440093;
+  model->Y0 = 0.312663855; /* 0.3187 */;
+  model->T0 = 1989.0;
+  model->SX = 61.0;
+  model->SY = 36.0;
+  model->ST = 1.0;
+#endif
+
+  for (t = tmin; t < tmax; t += tstep) {
+    for (lat=latmin; lat<=latmax+step/2.0; lat+=step) {
+      uk_range(lat, &lonmin, &lonmax);
+      for (lon=lonmin; lon<=lonmax+step/2.0; lon+=step) {
+
+        double Ei, Ni, Ee89, Ne89;
+        double de, dn;
+        int si, se;
+
+        osgb.lat = lat;
+        osgb.lon = lon;
+        osgb.h = 0;
+        osgb36_to_grid(&osgb, &en);
+        osgb36_to_wgs84(&osgb, &wgs);
+        wgs84_to_mxy(&wgs, &mxy);
+        si = get_itrs(lat, lon, &Ei, &Ni);
+        se = get_etrs89(lat, lon, t, &Ee89, &Ne89);
+
+        if (si && se) {
+          de = Ee89 - Ei;
+          dn = Ne89 - Ni;
+          dx = model->SX * (mxy.X - model->X0);
+          dy = model->SY * (mxy.Y - model->Y0);
+          dt = model->ST * (t - model->T0);
+#if 0
+          printf("%f %f %f %f\n", lat, lon, dx, dy);
+          fflush(stdout);
+#endif
+          xx[0] = 1.0;
+          for (i=1; i<2*OX-1; i++) {
+            xx[i] = dx * xx[i-1];
+          }
+          yy[0] = 1.0;
+          for (i=1; i<2*OY-1; i++) {
+            yy[i] = dy * yy[i-1];
+          }
+          tt[0] = 1.0;
+          for (i=1; i<2*OT-1; i++) {
+            tt[i] = dt * tt[i-1];
+          }
+
+          for (i=0; i<OY; i++) {
+            for (j=0; j<OY; j++) {
+              for (m=0; m<OX; m++) {
+                for (n=0; n<OX; n++) {
+                  for (u=0; u<OT; u++) {
+                    for (v=0; v<OT; v++) {
+                      M[OXY*u+OX*i+m][OXY*v+OX*j+n] += xx[m+n]*yy[i+j]*tt[u+v];
+                    }
+                  }
+                }
+              }
+            }
+          }
+          for (i=0; i<OX; i++) {
+            for (j=0; j<OY; j++) {
+              for (k=0; k<OT; k++) {
+                RE[k*OXY+i+OX*j] += de * xx[i] * yy[j] * tt[k];
+                RN[k*OXY+i+OX*j] += dn * xx[i] * yy[j] * tt[k];
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  solve2(M, OXYT, LE, LN, RE, RN);
+
+  for (i=0; i<OX; i++) {
+    for (j=0; j<OY; j++) {
+      for (k=0; k<OT; k++) {
+        model->e[i][j][k] = LE[k*OXY+i+OX*j];
+        model->n[i][j][k] = LN[k*OXY+i+OX*j];
+      }
+    }
+  }
+}
+
+static void print_model(const struct model *model) {/*{{{*/
+  int i, j, k;
+  printf("X0=%.10f\n", model->X0);
+  printf("Y0=%.10f\n", model->Y0);
+  printf("T0=%.10f\n", model->T0);
+  printf("SX=%.3f\n", model->SX);
+  printf("SY=%.3f\n", model->SY);
+  printf("ST=%.3f\n", model->ST);
+  for (i=0; i<OX; i++) {
+    for (j=0; j<OY; j++) {
+      for (k=0; k<OT; k++) {
+        printf("e[%d][%d][%d] = %15.5f   n[%d][%d][%d] = %15.5f\n",
+            i, j, k,
+            model->e[i][j][k],
+            i, j, k,
+            model->n[i][j][k]
+            );
+      }
+    }
+  }
+}
+/*}}}*/
+
+int main (int argc, char **argv)/*{{{*/
+{
+  struct model model;
+  load_osxx02();
+  fit(&model);
+  print_model(&model);
+
+#if 0
+  contours();
+#endif
 
   return 0;
 }
+/*}}}*/

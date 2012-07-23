@@ -180,10 +180,10 @@ void osgb36_to_wgs84(const struct llh *in, struct llh *out)
   convert(in, out, &osgb36_to_wgs84_param);
 }
 
-void itrs2005_to_etrs89(const struct llh *in, int year, struct llh *out)
+void itrs2005_to_etrs89(const struct llh *in, double year, struct llh *out)
 {
   struct param temp;
-  double dy = (double) year - 1989.0;
+  double dy = year - 1989.0;
   temp = itrs2005_to_etrs89_param;
   temp.rx *= dy;
   temp.ry *= dy;
