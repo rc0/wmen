@@ -46,6 +46,7 @@ struct point/*{{{*/
 #define N_NORTH 1251
 
 static struct point ostn[N_NORTH][N_EAST];
+static int initialised = 0;
 
 static inline struct point *lookup_point(int ee, int nn)/*{{{*/
 {
@@ -96,6 +97,7 @@ void load_osxx02(void)/*{{{*/
   }
 
   fclose(in);
+  initialised = 1;
 
 }
 /*}}}*/
@@ -105,6 +107,10 @@ int apply_ostn02(const struct en *en_wgs, struct en *en_osgb)/*{{{*/
   int e1, n1;
   double de, dn;
   double se, sn;
+  if (!initialised) {
+    fprintf(stderr, "load_osxx02 not called before!\n");
+    exit(2);
+  }
   e0 = (int)(0.001 * en_wgs->E);
   n0 = (int)(0.001 * en_wgs->N);
   e1 = e0 + 1;

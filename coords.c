@@ -79,6 +79,23 @@ static struct param osgb36_to_wgs84_param =
   WGS84_B
 };
 
+static struct param itrs2005_to_etrs89_param =
+{
+  WGS84_A,
+  WGS84_B,
+  0.056,
+  0.048,
+  -0.037,
+  /* THE FOLLOWING MUST BE SCALED BY THE NUMBER OF YEARS!! */
+  0.000054,
+  0.000518,
+  -0.000781,
+
+  0.0, /* s */
+  WGS84_A,
+  WGS84_B
+};
+
 static inline double radof(double deg)
 {
   return deg * (M_PI/180.0);
@@ -161,6 +178,17 @@ void wgs84_to_osgb36(const struct llh *in, struct llh *out)
 void osgb36_to_wgs84(const struct llh *in, struct llh *out)
 {
   convert(in, out, &osgb36_to_wgs84_param);
+}
+
+void itrs2005_to_etrs89(const struct llh *in, int year, struct llh *out)
+{
+  struct param temp;
+  double dy = (double) year - 1989.0;
+  temp = itrs2005_to_etrs89_param;
+  temp.rx *= dy;
+  temp.ry *= dy;
+  temp.rz *= dy;
+  convert(in, out, &temp);
 }
 
 void foo_to_grid(const struct llh *in,

@@ -24,10 +24,10 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 CC := gcc
-#CFLAGS := -g -Wall
-CFLAGS := -Os -Wall
+CFLAGS := -g -Wall
+#CFLAGS := -Os -Wall
 
-PROGS := height4 wm_to_grid grid_to_wm create_picture create_picture_2
+PROGS := height4 wm_to_grid grid_to_wm create_picture create_picture_2 etrs89
 all: $(PROGS)
 
 height4: height4.o coords.o solve.o uk.o contour.o tikz.o svg.o osxx02.o
@@ -43,6 +43,9 @@ create_picture: create_picture.c tikz.o contour.o
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 create_picture_2: create_picture_2.c tikz.o contour.o
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+etrs89: etrs89.o coords.o contour.o tikz.o svg.o osxx02.o
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 %.o : %.c tool.h contour.h

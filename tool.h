@@ -50,6 +50,7 @@ struct mxy
 
 extern void wgs84_to_osgb36(const struct llh *in, struct llh *out);
 extern void osgb36_to_wgs84(const struct llh *in, struct llh *out);
+extern void itrs2005_to_etrs89(const struct llh *in, int year, struct llh *out);
 extern void osgb36_to_grid(const struct llh *in, struct en *out);
 extern void wgs84_to_grid(const struct llh *in, struct en *out);
 extern void wgs84_to_mxy(const struct llh *in, struct mxy *out);
