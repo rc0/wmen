@@ -133,7 +133,7 @@ struct level north_levels[N_NORTH] = /*{{{*/
   {C7, -0.45, THICK2},
 };
 /*}}}*/
-static void contours(void)/*{{{*/
+static void contours_2012(void)/*{{{*/
 {
   double lonmin, lonmax;
   double latmin, latmax;
@@ -148,10 +148,6 @@ static void contours(void)/*{{{*/
 
   step = 0.025;
 
-  latmin = 54.0;
-  latmax = 56.0;
-  lonmin = -1.0;
-  lonmax = +1.0;
 #if 1
   latmin = 49.0;
   latmax = 61.0;
@@ -173,10 +169,12 @@ static void contours(void)/*{{{*/
       if (si && se) {
         de = Ee89 - Ei;
         dn = Ne89 - Ni;
+#if 0
         printf("%9.2f,%9.2f  %9.2f,%9.2f  %6.2f,%6.2f\n",
             Ei, Ni,
             Ee89, Ne89,
             de, dn);
+#endif
         fflush(stdout);
         add_cnode(inner_e, de);
         add_cnode(inner_n, dn);
@@ -187,7 +185,7 @@ static void contours(void)/*{{{*/
     }
   }
 
-  start_svg("itrs_etrs_east.svg");
+  start_svg("itrs_etrs_2012_east.svg");
   for (i=0; i<N_EAST; i++) {
     lines = generate_isolines(outer_e, east_levels[i].level);
     remap_clines(lines, lonmin, step, latmin, step);
@@ -199,7 +197,7 @@ static void contours(void)/*{{{*/
   }
   finish_svg();
 
-  start_svg("itrs_etrs_north.svg");
+  start_svg("itrs_etrs_2012_north.svg");
   for (i=0; i<N_NORTH; i++) {
     lines = generate_isolines(outer_n, north_levels[i].level);
     remap_clines(lines, lonmin, step, latmin, step);
@@ -233,7 +231,96 @@ struct model/*{{{*/
 };
 
 /*}}}*/
-static void fit(struct model *model)
+static void contours_err(const struct model *m)/*{{{*/
+{
+  double lonmin, lonmax;
+  double latmin, latmax;
+  double step;
+  double lat, lon;
+  struct llh wgs;
+  struct mxy mxy;
+  struct cdata *outer_e, *outer_n;
+  struct crow *inner_e, *inner_n;
+  struct cline *lines;
+  int i;
+  double t = 2012.0;
+
+  load_osxx02();
+
+  step = 0.025;
+
+#if 1
+  latmin = 49.0;
+  latmax = 61.0;
+  lonmin = -8.0;
+  lonmax = +2.0;
+#endif
+
+  outer_e = new_cdata();
+  outer_n = new_cdata();
+  for (lat=latmin; lat<=latmax+step/2.0; lat+=step) {
+    inner_e = next_crow(outer_e);
+    inner_n = next_crow(outer_n);
+    for (lon=lonmin; lon<=lonmax+step/2.0; lon+=step) {
+      double Ei, Ni, Ee89, Ne89;
+      double Ep, Np;
+      double de, dn;
+      double dx, dy, dt;
+      int si, se;
+      si = get_itrs(lat, lon, &Ei, &Ni);
+      se = get_etrs89(lat, lon, 2012, &Ee89, &Ne89);
+      if (si && se) {
+        wgs.lat = lat;
+        wgs.lon = lon;
+        wgs.h = 0;
+        wgs84_to_mxy(&wgs, &mxy);
+        dx = m->SX * (mxy.X - m->X0);
+        dy = m->SY * (mxy.Y - m->Y0);
+        dt = m->ST * (t - m->T0);
+        Ep =  0.04989 - 0.01455*dt - 0.00190*dt*dy;
+        Np = -0.06564 - 0.01602*dt - 0.00112*dt*dx;
+
+        de = 1000.0 * ((Ee89 - Ei) - Ep);
+        dn = 1000.0 * ((Ne89 - Ni) - Np);
+        fflush(stdout);
+        add_cnode(inner_e, de);
+        add_cnode(inner_n, dn);
+      } else {
+        add_empty_cnode(inner_e);
+        add_empty_cnode(inner_n);
+      }
+    }
+  }
+
+  start_svg("itrs_etrs_error_2012_east.svg");
+  for (i=0; i<N_LEVELS_2; i++) {
+    lines = generate_isolines(outer_e, levels_2side[i].level);
+    remap_clines(lines, lonmin, step, latmin, step);
+    emit_svg(levels_2side[i].level, levels_2side[i].svg_colour, levels_2side[i].width_scale, lines);
+#if 0
+    emit_tikz(levels_1side[i].level, levels_1side[i].colour, levels_1side[i].thickness, lines);
+#endif
+    free_clines(lines);
+  }
+  finish_svg();
+
+  start_svg("itrs_etrs_error_2012_north.svg");
+  for (i=0; i<N_LEVELS_2; i++) {
+    lines = generate_isolines(outer_n, levels_2side[i].level);
+    remap_clines(lines, lonmin, step, latmin, step);
+    emit_svg(levels_2side[i].level, levels_2side[i].svg_colour, levels_2side[i].width_scale, lines);
+#if 0
+    emit_tikz(levels_1side[i].level, levels_1side[i].colour, levels_1side[i].thickness, lines);
+#endif
+    free_clines(lines);
+  }
+  finish_svg();
+
+  free_cdata(outer_e);
+  free_cdata(outer_n);
+}
+/*}}}*/
+static void fit_wm(struct model *model)/*{{{*/
 {
   double latmin = 49.8;
   double latmax = 61.0;
@@ -242,7 +329,7 @@ static void fit(struct model *model)
   double step = 0.1;
 
   double lat, lon;
-  struct llh osgb, wgs;
+  struct llh wgs;
   struct mxy mxy;
   struct en en;
   double dx, dy, dt;
@@ -253,8 +340,8 @@ static void fit(struct model *model)
   double t;
 
   tmin = 1989.0;
-  tmax = 2089.001;
-  tstep = 10.0;
+  tmax = 2039.00001;
+  tstep = 0.05;
 
   for (i=0; i<OXYT; i++) {
     for (j=0; j<OXYT; j++) {
@@ -284,11 +371,9 @@ static void fit(struct model *model)
         double de, dn;
         int si, se;
 
-        osgb.lat = lat;
-        osgb.lon = lon;
-        osgb.h = 0;
-        osgb36_to_grid(&osgb, &en);
-        osgb36_to_wgs84(&osgb, &wgs);
+        wgs.lat = lat;
+        wgs.lon = lon;
+        wgs.h = 0;
         wgs84_to_mxy(&wgs, &mxy);
         si = get_itrs(lat, lon, &Ei, &Ni);
         se = get_etrs89(lat, lon, t, &Ee89, &Ne89);
@@ -353,7 +438,7 @@ static void fit(struct model *model)
     }
   }
 }
-
+/*}}}*/
 static void print_model(const struct model *model) {/*{{{*/
   int i, j, k;
   printf("X0=%.10f\n", model->X0);
@@ -380,13 +465,26 @@ static void print_model(const struct model *model) {/*{{{*/
 int main (int argc, char **argv)/*{{{*/
 {
   struct model model;
+  struct model model2;
   load_osxx02();
-  fit(&model);
-  print_model(&model);
-
 #if 0
-  contours();
+  fit_wm(&model);
+  print_model(&model);
 #endif
+
+#if 1
+  contours_2012();
+#endif
+
+  model2.X0 = 0.494440093;
+  model2.Y0 = 0.312663855; /* 0.3187 */;
+  model2.T0 = 1989.0;
+  model2.SX = 61.0;
+  model2.SY = 36.0;
+  model2.ST = 1.0;
+  memset(model2.e, 0, sizeof(model2.e));
+  memset(model2.n, 0, sizeof(model2.n));
+  contours_err(&model2);
 
   return 0;
 }
