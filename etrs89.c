@@ -186,28 +186,28 @@ static void contours_2012(void)/*{{{*/
   }
 
   start_svg("itrs_etrs_2012_east.svg");
+  start_tikz("itrs_etrs_2012_east.tex");
   for (i=0; i<N_EAST; i++) {
     lines = generate_isolines(outer_e, east_levels[i].level);
     remap_clines(lines, lonmin, step, latmin, step);
     emit_svg(east_levels[i].level, east_levels[i].svg_colour, east_levels[i].width_scale, lines);
-#if 0
-    emit_tikz(levels_1side[i].level, levels_1side[i].colour, levels_1side[i].thickness, lines);
-#endif
+    emit_tikz(east_levels[i].level, east_levels[i].colour, east_levels[i].thickness, lines);
     free_clines(lines);
   }
+  finish_tikz();
   finish_svg();
 
   start_svg("itrs_etrs_2012_north.svg");
+  start_tikz("itrs_etrs_2012_north.tex");
   for (i=0; i<N_NORTH; i++) {
     lines = generate_isolines(outer_n, north_levels[i].level);
     remap_clines(lines, lonmin, step, latmin, step);
     emit_svg(north_levels[i].level, north_levels[i].svg_colour, north_levels[i].width_scale, lines);
-#if 0
-    emit_tikz(levels_1side[i].level, levels_1side[i].colour, levels_1side[i].thickness, lines);
-#endif
+    emit_tikz(north_levels[i].level, north_levels[i].colour, north_levels[i].thickness, lines);
     free_clines(lines);
   }
   finish_svg();
+  finish_tikz();
 
   free_cdata(outer_e);
   free_cdata(outer_n);
@@ -277,8 +277,13 @@ static void contours_err(const struct model *m)/*{{{*/
         dx = m->SX * (mxy.X - m->X0);
         dy = m->SY * (mxy.Y - m->Y0);
         dt = m->ST * (t - m->T0);
+#if 0
         Ep =  0.04989 - 0.01455*dt - 0.00190*dt*dy;
         Np = -0.06564 - 0.01602*dt - 0.00112*dt*dx;
+#else
+        Ep =  0.050 - 0.0146*dt - 0.002*dt*dy;
+        Np = -0.066 - 0.0160*dt - 0.001*dt*dx;
+#endif
 
         de = 1000.0 * ((Ee89 - Ei) - Ep);
         dn = 1000.0 * ((Ne89 - Ni) - Np);
@@ -293,28 +298,32 @@ static void contours_err(const struct model *m)/*{{{*/
   }
 
   start_svg("itrs_etrs_error_2012_east.svg");
+  start_tikz("itrs_etrs_error_2012_east.tex");
   for (i=0; i<N_LEVELS_2; i++) {
-    lines = generate_isolines(outer_e, levels_2side[i].level);
+    double level = levels_2side[i].level;
+    if ((fabs(level) > 0.0) && (fabs(level) < 0.7)) continue;
+    lines = generate_isolines(outer_e, level);
     remap_clines(lines, lonmin, step, latmin, step);
-    emit_svg(levels_2side[i].level, levels_2side[i].svg_colour, levels_2side[i].width_scale, lines);
-#if 0
-    emit_tikz(levels_1side[i].level, levels_1side[i].colour, levels_1side[i].thickness, lines);
-#endif
+    emit_svg(level, levels_2side[i].svg_colour, levels_2side[i].width_scale, lines);
+    emit_tikz(level, levels_2side[i].colour, levels_2side[i].thickness, lines);
     free_clines(lines);
   }
   finish_svg();
+  finish_tikz();
 
   start_svg("itrs_etrs_error_2012_north.svg");
+  start_tikz("itrs_etrs_error_2012_north.tex");
   for (i=0; i<N_LEVELS_2; i++) {
-    lines = generate_isolines(outer_n, levels_2side[i].level);
+    double level = levels_2side[i].level;
+    if ((fabs(level) > 0.0) && (fabs(level) < 0.7)) continue;
+    lines = generate_isolines(outer_n, level);
     remap_clines(lines, lonmin, step, latmin, step);
-    emit_svg(levels_2side[i].level, levels_2side[i].svg_colour, levels_2side[i].width_scale, lines);
-#if 0
-    emit_tikz(levels_1side[i].level, levels_1side[i].colour, levels_1side[i].thickness, lines);
-#endif
+    emit_svg(level, levels_2side[i].svg_colour, levels_2side[i].width_scale, lines);
+    emit_tikz(level, levels_2side[i].colour, levels_2side[i].thickness, lines);
     free_clines(lines);
   }
   finish_svg();
+  finish_tikz();
 
   free_cdata(outer_e);
   free_cdata(outer_n);
@@ -439,6 +448,125 @@ static void fit_wm(struct model *model)/*{{{*/
   }
 }
 /*}}}*/
+static void fit_en(struct model *model)/*{{{*/
+{
+  double latmin = 49.8;
+  double latmax = 61.0;
+  double lonmin, lonmax;
+  double tmin, tmax, tstep;
+  double step = 0.1;
+
+  double lat, lon;
+  struct llh wgs;
+  struct mxy mxy;
+  struct en en;
+  double dx, dy, dt;
+  long double xx[2*OX-1], yy[2*OY-1], tt[2*OT-1];
+  long double LE[OXYT], LN[OXYT], RE[OXYT], RN[OXYT];
+  Matrix M;
+  int i, j, k, m, n, u, v;
+  double t;
+
+  tmin = 1989.0;
+  tmax = 2039.00001;
+  tstep = 0.05;
+
+  for (i=0; i<OXYT; i++) {
+    for (j=0; j<OXYT; j++) {
+      M[i][j] = 0.0;
+    }
+  }
+  for (i=0; i<OXYT; i++) {
+    RE[i] = 0.0;
+    RN[i] = 0.0;
+  }
+
+#if 1
+  model->X0 = 400000.0;
+  model->Y0 = 650000.0;
+  model->T0 = 1989.0;
+  model->SX = 1.0 / 400000.0;
+  model->SY = 1.0 / 650000.0;
+  model->ST = 1.0;
+#endif
+
+  for (t = tmin; t < tmax; t += tstep) {
+    for (lat=latmin; lat<=latmax+step/2.0; lat+=step) {
+      uk_range(lat, &lonmin, &lonmax);
+      for (lon=lonmin; lon<=lonmax+step/2.0; lon+=step) {
+
+        double Ei, Ni, Ee89, Ne89;
+        double de, dn;
+        int si, se;
+
+        wgs.lat = lat;
+        wgs.lon = lon;
+        wgs.h = 0;
+        wgs84_to_mxy(&wgs, &mxy);
+        si = get_itrs(lat, lon, &Ei, &Ni);
+        se = get_etrs89(lat, lon, t, &Ee89, &Ne89);
+
+        if (si && se) {
+          de = Ee89 - Ei;
+          dn = Ne89 - Ni;
+          dx = model->SX * (Ei - model->X0);
+          dy = model->SY * (Ni - model->Y0);
+          dt = model->ST * (t - model->T0);
+#if 0
+          printf("%f %f %f %f\n", lat, lon, dx, dy);
+          fflush(stdout);
+#endif
+          xx[0] = 1.0;
+          for (i=1; i<2*OX-1; i++) {
+            xx[i] = dx * xx[i-1];
+          }
+          yy[0] = 1.0;
+          for (i=1; i<2*OY-1; i++) {
+            yy[i] = dy * yy[i-1];
+          }
+          tt[0] = 1.0;
+          for (i=1; i<2*OT-1; i++) {
+            tt[i] = dt * tt[i-1];
+          }
+
+          for (i=0; i<OY; i++) {
+            for (j=0; j<OY; j++) {
+              for (m=0; m<OX; m++) {
+                for (n=0; n<OX; n++) {
+                  for (u=0; u<OT; u++) {
+                    for (v=0; v<OT; v++) {
+                      M[OXY*u+OX*i+m][OXY*v+OX*j+n] += xx[m+n]*yy[i+j]*tt[u+v];
+                    }
+                  }
+                }
+              }
+            }
+          }
+          for (i=0; i<OX; i++) {
+            for (j=0; j<OY; j++) {
+              for (k=0; k<OT; k++) {
+                RE[k*OXY+i+OX*j] += de * xx[i] * yy[j] * tt[k];
+                RN[k*OXY+i+OX*j] += dn * xx[i] * yy[j] * tt[k];
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  solve2(M, OXYT, LE, LN, RE, RN);
+
+  for (i=0; i<OX; i++) {
+    for (j=0; j<OY; j++) {
+      for (k=0; k<OT; k++) {
+        model->e[i][j][k] = LE[k*OXY+i+OX*j];
+        model->n[i][j][k] = LN[k*OXY+i+OX*j];
+      }
+    }
+  }
+}
+/*}}}*/
 static void print_model(const struct model *model) {/*{{{*/
   int i, j, k;
   printf("X0=%.10f\n", model->X0);
@@ -476,6 +604,7 @@ int main (int argc, char **argv)/*{{{*/
   contours_2012();
 #endif
 
+#if 1
   model2.X0 = 0.494440093;
   model2.Y0 = 0.312663855; /* 0.3187 */;
   model2.T0 = 1989.0;
@@ -485,6 +614,12 @@ int main (int argc, char **argv)/*{{{*/
   memset(model2.e, 0, sizeof(model2.e));
   memset(model2.n, 0, sizeof(model2.n));
   contours_err(&model2);
+#endif
+
+#if 1
+  fit_en(&model);
+  print_model(&model);
+#endif
 
   return 0;
 }
