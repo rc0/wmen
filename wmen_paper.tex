@@ -950,13 +950,8 @@ The method used relies on Chebyshev polynomials of the first kind.  These are de
 \end{align}
 
 and have the property that for $x \in [-1,1]$, $T_n(x) \in [-1,1]$ for all $n$.
-
-For example,
-\begin{align}
-  T_5(x) = 16x^5 - 20x^3 + 5x
-\end{align}
-
-Because $T_5(x) \in [-1,1]$, we can approximate $x^5$ over the range $[-1,1]$ by
+For example, $T_5(x) = 16x^5 - 20x^3 + 5x$.  Because $T_5(x) \in [-1,1]$, we
+can approximate $x^5$ over the range $[-1,1]$ by
 
 \begin{align}
   x^5 \approx \frac{20x^3}{16} - \frac{5x}{16}
@@ -996,7 +991,7 @@ Given these, it is simple to get the latitude $M$ and longitude $L$ (in
 
 \begin{align}
   L &= (2X - 1)\pi \\
-  M &= \left[2\tan^{-1}\left(e^t\right)\right] - \frac{\pi}{2} \\
+  M &= \left[2\tan^{-1}\left(e^t\right)\right] - \frac{\pi}{2}
   \label{eqn:y_to_M}
   \intertext{where}
   t &= (1 - 2Y)\pi
@@ -1007,7 +1002,7 @@ The latitude formula uses the Gudermannian function.
 Given the all-numeric (6-figure) eastings, northings $(E,N)$, let
 
 \begin{align}
-  \eta &= \frac{E - 400000}{400000} \\[1ex]
+  \eta &= \frac{E - 400000}{400000} & 
   \nu  &= \frac{N - 650000}{650000}
 \end{align}
 
@@ -1235,10 +1230,10 @@ taking square roots.  The reader is directed to \cite{gcs}.
 
 \section {Implementation}
 \label{sec:implementation}
-This section considers an implementation of equations \eqref{eqn:east1} and
-\eqref{eqn:north1}.  If the target machine has a fused multiply-accumulate
-instruction, the representations shown in figure \ref{fig:fused-mac} may be
-attractive:
+This section considers an implementation of equations \eqref{eqn:east1},
+\eqref{eqn:north1} and \eqref{eqn:east5}, \eqref{eqn:north5}.  If the target
+machine has a fused multiply-accumulate instruction, the representations shown
+in figure \ref{fig:fused-mac} may be attractive:
 
 \begin{figure}[htb]
 
@@ -1350,6 +1345,103 @@ compiler and/or issue logic to exploit.
 The construction of the above algorithm is based on an extension of Estrin's
 method \cite{estrin} into two dimensions.
 
+\begin{figure}[htb]
+  \centering
+  \begin{tikzpicture}
+    \begin{scope}
+      \draw [step=1cm] (0,0) grid (6,2);
+      \draw [step=1cm,red,xshift=7mm,yshift=3mm] (0,0) grid (6,2);
+      \draw [red,thick,->,xshift=7mm,yshift=3mm] (0cm,2cm) -- +(2cm,1cm);
+      \draw [red,thick,->,xshift=7mm,yshift=3mm] (6cm,0cm) -- +(2cm,1cm);
+    \end{scope}
+  \end{tikzpicture}
+  \caption{ITRS (black) fixed `in space', ETRS89 (red) fixed to Europe, which is moving}
+\end{figure}
+
+\begin{figure}[htb]
+  \begin{subfigure}[b]{0.4\textwidth}
+  \centering
+  \fbox{
+    \input itrs_etrs_2012_east.tex
+  }
+  \caption{Eastings}
+  \label{fig:itrs-etrs-east}
+\end{subfigure}
+\gap
+  \begin{subfigure}[b]{0.4\textwidth}
+  \centering
+  \fbox{
+    \input itrs_etrs_2012_north.tex
+  }
+  \caption{Northings}
+  \label{fig:itrs-etrs-north}
+\end{subfigure}
+\caption{Difference between ITRS and ETRS89 over the UK in 2012 (metres)}
+\hrulefill
+\end{figure}
+
+\section {ITRS2005 to ETRS89 conversion}
+
+So far in this note, it has been assumed that ETRS89 and WGS84 are the same.
+Due to the tectonic plate movement this is not the case, and in fact the
+difference gets greater with time.
+
+The conversions between ITRS and ETRS89 are described in section 6.5 of
+\cite{gcs}.  ITRS and WGS84 are aligned to within centimetres (see
+\cite{itrs-wgs}).  By applying the transverse Mercator projection (annex C.1 of
+\cite{gcs}) followed by the OSTN02 look-up table to both ITRS and ETRS89, the
+differences in eastings and northings can be obtained.  These differences are
+plotted in figures \ref{fig:itrs-etrs-east} and \ref{fig:itrs-etrs-north} for
+2012.  The combined difference is over half a metre.  As the formulae in
+equations \eqref{eqn:east1} and \eqref{eqn:north1} are giving approximation
+errors under a metre, this is a significant discrepency.  Both the eastings and
+northings differences are negative, indicating that the UK is moving
+north-eastwards with respect to WGS84.
+
+It is possible to obtain a simple model of this difference.  Defining $\alpha$,
+$\beta$ as before:
+
+\begin{align}
+  \alpha &= 61 (X-0.494440093) &
+  \beta  &= 36 (Y-0.312663855)
+\end{align}
+and a new variable $\tau$ given from the current year $y$ by
+\begin{align}
+  \tau   &= y - 1989.0
+\end{align}
+
+we can calculate corrected eastings and northings $E_o$, $N_o$ relative to
+ETRS89 based on $E_i, N_i$ based on ITRS (WGS84) as
+
+\begin{align}
+  E_o & = E_i + 0.05 - 0.0146\tau - 0.002\tau\beta \label{eqn:eoeiab} \\
+  N_o & = N_i - 0.066 - 0.016\tau - 0.001\tau\alpha \label{eqn:noniab}
+\end{align}
+
+For a given choice of $y$ and hence $\tau$, these corrections could be absorbed
+into equations \eqref{eqn:east1}, \eqref{eqn:north1}.  The ITRS/ETRS89 error
+that is not corrected by equations \eqref{eqn:eoeiab}, \eqref{eqn:noniab} is at
+the level of millimetres, i.e. beyond the accuracy of other factors in the
+process.
+
+If $\eta$, $\nu$ are defined as earlier by
+
+\begin{align}
+  \eta_i &= \frac{E_i - 400000}{400000} &
+  \nu_i  &= \frac{N_i - 650000}{650000}
+\end{align}
+
+the corrections can also be calculated form
+
+\begin{align}
+  E_o & = E_i + 0.05 - 0.0145\tau - 0.002\tau\nu_i \label{eqn:eoeien} \\
+  N_o & = N_i - 0.066 - 0.016\tau - 0.001\tau\eta_i \label{eqn:nonien}
+\end{align}
+
+Equations \eqref{eqn:eoeien}, \eqref{eqn:nonien} are applicable in their own
+right, leaving aside the Web Mercator basis of the calculations elsewhere in
+this note.
+
 \section {Tried and failed}
 
 Various dead-ends were found during the development.  These are described below.
@@ -1432,6 +1524,8 @@ CC-BY licence.
   \bibitem {mt1} \url{http://www.movable-type.co.uk/scripts/latlong-convert-coords.html}
   \bibitem {ngdc} \url{http://www.ngdc.noaa.gov/mgg/coast/}
   \bibitem {estrin} \url{http://en.wikipedia.org/wiki/Estrin%27s_scheme}
+  \bibitem {itrs-wgs} \url{http://www.fig.net/commission5/wg52/GNSS%20CORS%20-%20Reference%20Frames%20and%20Datums%20V10.pdf}
+  \bibitem {ref-systems} \url{http://geodesy.noaa.gov/CORS/Articles/Reference-Systems-Part-3.pdf}
   \bibitem {source} \url{https://github.com/rc0/wmen}
 \end{thebibliography}
 
