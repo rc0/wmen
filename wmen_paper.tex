@@ -1,5 +1,4 @@
 \documentclass[10pt,a4paper]{article}
-\usepackage[T1]{fontenc}
 \usepackage{charter}
 \usepackage{inconsolata}
 \usepackage{geometry}
@@ -12,10 +11,12 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows,positioning,shapes}
 
-\usetikzlibrary{external}
-\tikzexternalize[
-  mode=list and make,
-  prefix=figures/]
+%%\usetikzlibrary{external}
+%%\tikzexternalize[
+%%  mode=list and make,
+%%  prefix=figures/]
+%%\def\tkname#1{\tikzsetnextfilename{#1}}
+\def\tkname#1{}
 
 \usepackage{booktabs}
 \geometry{left=0.5in,right=0.5in,top=0.5in,bottom=1in,a4paper}
@@ -74,6 +75,7 @@
            shorten >=2pt,}
 }
 
+
 \begin{document}
 \maketitle
 \tableofcontents
@@ -131,6 +133,7 @@ location as the map is panned, without converting back to lat,long.
   \hrulefill
 
   \centering
+  \tkname{aims}
 \begin{tikzpicture}
   \begin{scope}
   \node[box] (wgs84-polar) {WGS84 (polar) \linebreak (lat,long,height)};
@@ -162,7 +165,7 @@ Assume $M_d$ and $L_d$ are the latitude and longitude in \textbf{degrees}
 (positive $M_d$ is north, positive $L_d$ is east).  Define $P$, $Q$ as follows:
 
 \begin{align}
-P & = \frac{2\left(M_d - 54.5\right)}{9} \\
+  P & = \frac{2\left(M_d - 54.5\right)}{9} & 
   Q & = \frac{\left(L_d + 2.0\right)}{4}
 \end{align}
 
@@ -193,7 +196,9 @@ level'' (referenced to ODN) can be estimated as
 \label{eqn:ahat}
 \end{equation}
 
-where $P$ and $Q$ are obtained from $M_d$ and $L_d$ as shown earlier.
+where $P$ and $Q$ are obtained from $M_d$ and $L_d$ as shown earlier.  If only
+a very rough answer is required, a reasonable ``rule-of-thumb'' would be to
+just subtract 50.
 
 The coefficients in equation \eqref{eqn:odn} were arrived at by a least-squares
 fit against the OSGM02 model on a grid of points in the lat,long space.  Note
@@ -209,9 +214,11 @@ sufficient, especially as equation \eqref{eqn:odn} is so cheap to evaluate.
 Section \ref{sec:contour-key} on page \pageref{sec:contour-key} shows the
 representations of the contours.
 
+
 % ----------------------------------------------------------------------------
 \begin{figure}[t]
   \centering
+  \tkname{grid_os}
   \fbox{
     \input picture2
   }
@@ -265,6 +272,7 @@ indexed relative to this projection.
 % ----------------------------------------------------------------------------
 \begin{figure}[t]
   \centering
+  \tkname{grid_wm}
   \fbox{
     \input picture1
   }
@@ -359,6 +367,7 @@ more suitable for hardware.
 
 \begin{figure}[htb]
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{one_metre_model}
   \centering
   \fbox{
     \input wm_to_grid_1m.tex
@@ -368,6 +377,7 @@ more suitable for hardware.
 \end{subfigure}
 \gap
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{5_metre_model}
   \centering
   \fbox{
     \input wm_to_grid_5m.tex
@@ -424,6 +434,7 @@ reference --- at least as accurately as the eye would estimate from a map.
 
 \begin{figure}[htb]
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{35-metre-model}
   \centering
   \fbox{
     \input wm_to_grid_35m.tex
@@ -433,6 +444,7 @@ reference --- at least as accurately as the eye would estimate from a map.
   \end{subfigure}
 \gap
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{odn_base}
   \centering
   \fbox{
     \input height4.tex
@@ -455,6 +467,7 @@ The starting point was to approximate the WGS84 to OSGB36 conversion by the
   \hrulefill
 
   \centering
+  \tkname{derivation-helmert}
 \begin{tikzpicture}
   \begin{scope}
   \node[box] (wgs84-polar) {WGS84 (polar) \linebreak (lat,long,height)};
@@ -781,6 +794,7 @@ model for figure \ref{fig:derivation_helmert}.
   \hrulefill
 
   \centering
+  \tkname{derivation-ostn02}
 \begin{tikzpicture}
   \begin{scope}
   \node[box] (wgs84-polar) {WGS84 (polar) \linebreak (lat,long,height)};
@@ -836,6 +850,7 @@ model for figure \ref{fig:derivation_helmert}.
 
 \begin{figure}[htb]
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{untrimmed-v-7param}
   \centering
   \fbox{
     \input wm_to_grid_notrim_7param.tex
@@ -845,6 +860,7 @@ model for figure \ref{fig:derivation_helmert}.
 \end{subfigure}
 \gap
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{untrimmed-v-ostn02}
   \centering
   \fbox{
     \input wm_to_grid_notrim_ostn.tex
@@ -1041,6 +1057,7 @@ Y_6 &= -27.92\nu^5 -20.62\nu^6\nonumber \\
 
 \begin{figure}[htb]
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{grid_to_wm_1m}
   \centering
   \fbox{
     \input grid_to_wm_1m.tex
@@ -1050,6 +1067,7 @@ Y_6 &= -27.92\nu^5 -20.62\nu^6\nonumber \\
 \end{subfigure}
 \gap
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{grid_to_wm_10m}
   \centering
   \fbox{
     \input grid_to_wm_10m.tex
@@ -1326,6 +1344,7 @@ t109 = t104 + t108*beta2;
 N = t109 + (107.47)*beta4;
     \end{verbatim}
 \caption{5m model (equations \eqref{eqn:east5} \& \eqref{eqn:north5})}
+    \label{fig:impl-5m}
 \end{subfigure}
 
   \caption{Fused-MAC based implementations}
@@ -1340,13 +1359,16 @@ coefficients in the equations.  However in this representation, the multiplies
 (aside from the successive squarings to form $\alpha^{2^n}$ and $\beta^{2^n}$) are
 folded into the multiply-accumulate operations.  Subject to there being
 sufficient registers, this scheme also has a lot of parallelism for the
-compiler and/or issue logic to exploit.
+compiler and/or issue logic to exploit.  In fact, it is the method shown in
+figure \ref{fig:impl-5m} that has been used in the Android application, to
+provide 8-figure grid references (10m x 10m squares).
 
 The construction of the above algorithm is based on an extension of Estrin's
 method \cite{estrin} into two dimensions.
 
 \begin{figure}[htb]
   \centering
+  \tkname{tectonic}
   \begin{tikzpicture}
     \begin{scope}
       \draw [step=1cm] (0,0) grid (6,2);
@@ -1356,10 +1378,12 @@ method \cite{estrin} into two dimensions.
     \end{scope}
   \end{tikzpicture}
   \caption{ITRS (black) fixed `in space', ETRS89 (red) fixed to Europe, which is moving}
+  \label{fig:tectonic}
 \end{figure}
 
 \begin{figure}[htb]
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{itrs-etrs-east}
   \centering
   \fbox{
     \input itrs_etrs_2012_east.tex
@@ -1369,6 +1393,7 @@ method \cite{estrin} into two dimensions.
 \end{subfigure}
 \gap
   \begin{subfigure}[b]{0.4\textwidth}
+    \tkname{itrs-etrs-north}
   \centering
   \fbox{
     \input itrs_etrs_2012_north.tex
@@ -1384,7 +1409,7 @@ method \cite{estrin} into two dimensions.
 
 So far in this note, it has been assumed that ETRS89 and WGS84 are the same.
 Due to the tectonic plate movement this is not the case, and in fact the
-difference gets greater with time.
+difference gets greater with time.  See figure \ref{fig:tectonic}.
 
 The conversions between ITRS and ETRS89 are described in section 6.5 of
 \cite{gcs}.  ITRS and WGS84 are aligned to within centimetres (see
@@ -1496,6 +1521,9 @@ pruning terms to produce simpler formulae with degraded accuracy.
 \textsl{Ordnance Survey}, \textsl{OSGM02} and \textsl{OSGB36} are registered
 trade marks and \textsl{OSTN02} is a trademark of Ordnance Survey, the national
 mapping agency of Great Britain.
+
+Other trademarks may have been overlooked; this is through ignorance or lack of
+research and is not intentional.
 
 The map outlines in this paper are based on vector coastline data downloaded
 from \cite{ngdc}, over the range $[49,62]$ in latitude and $[-9,+2]$ in
