@@ -189,9 +189,55 @@ static void inner_print_tree(struct tree *cursor, const char *res, const char *v
   printf(";\n");
 }
 /*}}}*/
+static void inner_print_tree_tcl(struct tree *cursor, const char *res, const char *vr, const char *vc)/*{{{*/
+{
+  if (cursor->t0 && cursor->t0->type == X_MACMUL) {
+    inner_print_tree_tcl(cursor->t0, NULL, vr, vc);
+  }
+  if (cursor->t1 && cursor->t1->type == X_MACMUL) {
+    inner_print_tree_tcl(cursor->t1, NULL, vr, vc);
+  }
+  if (res) {
+    printf("set %s [expr ", res);
+  } else {
+    printf("set t%d [expr ", cursor->number);
+  }
+  if (cursor->t0) {
+    switch(cursor->t0->type) {
+      case X_CONST:
+        printf("(%s)", cursor->t0->value);
+        break;
+      case X_MACMUL:
+        printf("$t%d", cursor->t0->number);
+        break;
+    }
+    if (cursor->t1) printf(" + ");
+  }
+  if (cursor->t1) {
+    switch(cursor->t1->type) {
+      case X_CONST:
+        printf("(%s)", cursor->t1->value);
+        break;
+      case X_MACMUL:
+        printf("$t%d", cursor->t1->number);
+        break;
+    }
+    printf(" * $%s", cursor->horiz ? vr : vc);
+    if (cursor->pow > 1) {
+      printf("%d", cursor->pow);
+    }
+  }
+  printf("]\n");
+}
+/*}}}*/
 static void print_tree(struct tree *top, const char *res, const char *vr, const char *vc)/*{{{*/
 {
   inner_print_tree(top, res, vr, vc);
+}
+/*}}}*/
+static void print_tree_tcl(struct tree *top, const char *res, const char *vr, const char *vc)/*{{{*/
+{
+  inner_print_tree_tcl(top, res, vr, vc);
 }
 /*}}}*/
 
@@ -264,6 +310,31 @@ static void emit_powers(const struct tree *top, const char *vr, const char *vc)/
       printf("%s%d * %s%d;\n", vc, i, vc, i);
     } else {
       printf("%s * %s;\n", vc, vc);
+    }
+  }
+}
+/*}}}*/
+static void emit_powers_tcl(const struct tree *top, const char *vr, const char *vc)/*{{{*/
+{
+  int max_r, max_c;
+  int i;
+  max_r = 0;
+  max_c = 0;
+  find_max_pow(top, &max_r, &max_c);
+  for (i=1; i<max_r; i<<=1) {
+    printf("set %s%d [expr ", vr, i<<1);
+    if (i > 1) {
+      printf("$%s%d * $%s%d]\n", vr, i, vr, i);
+    } else {
+      printf("$%s * $%s]\n", vr, vr);
+    }
+  }
+  for (i=1; i<max_c; i<<=1) {
+    printf("set %s%d [expr ", vc, i<<1);
+    if (i > 1) {
+      printf("$%s%d * $%s%d]\n", vc, i, vc, i);
+    } else {
+      printf("$%s * $%s]\n", vc, vc);
     }
   }
 }
@@ -359,6 +430,8 @@ void estrin2(SMatrix m, int nx, int ny, const char *vr, const char *vc, const ch
   number_temps(top);
   emit_powers(top, vr, vc);
   print_tree(top, res, vr, vc);
+  emit_powers_tcl(top, vr, vc);
+  print_tree_tcl(top, res, vr, vc);
   free_tree(top);
   return;
 }
