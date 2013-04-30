@@ -1,0 +1,291 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+\usepackage{charter}
+%\usepackage{inconsolata}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{caption}
+%\usepackage{subcaption}
+\usepackage{rotating}
+\usepackage{gensymb}
+\usepackage{lettrine}
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning,shapes}
+
+%%\usetikzlibrary{external}
+%%\tikzexternalize[
+%%  mode=list and make,
+%%  prefix=figures/]
+%%\def\tkname#1{\tikzsetnextfilename{#1}}
+\def\tkname#1{}
+
+\usepackage{booktabs}
+\geometry{left=0.5in,right=0.5in,top=0.5in,bottom=1in,a4paper}
+\setlength{\parskip}{2ex plus 0.5ex minus 0.5ex}
+\setlength{\parindent}{0pt}
+\def\gap{\hspace{2cm}}
+\usepackage[charter]{mathdesign}
+\usepackage{amsmath}
+\usepackage[draft]{hyperref}
+\title{Fast approximation of geodesic distance between\\points specified by Web Mercator coordinates}
+\author{Richard P. Curnow}
+
+\tikzset{
+    %Define standard arrow tip
+    >=stealth',
+    %Define style for boxes
+    box/.style={
+           rectangle,
+           rounded corners,
+           draw=black, very thick,
+           text width=9em,
+           minimum height=2em,
+           text centered},
+    boxzag/.style={
+           draw=black, very thick,
+           starburst,
+           text width=6.5em,
+           minimum height=2em,
+           text centered},
+    annot/.style={
+           text width=7em,
+           text centered},
+    % Define arrow style
+    arr/.style={
+           ->,
+           very thick,
+           shorten <=2pt,
+           shorten >=2pt,},
+    redarr/.style={
+           ->,
+           very thick,
+           draw=red,
+           shorten <=2pt,
+           shorten >=2pt,},
+    bluearr/.style={
+           ->,
+           very thick,
+           draw=blue,
+           shorten <=2pt,
+           shorten >=2pt,},
+    purparr/.style={
+           ->,
+           very thick,
+           draw=blue!50!red,
+           shorten <=2pt,
+           shorten >=2pt,}
+}
+
+
+\begin{document}
+\maketitle
+
+\section {Background}
+\lettrine{W}{hen} writing mapping applications \cite{app} that use map tiles
+from the Internet (e.g.  OpenStreetMap), it is convenient to work in the
+\textit{Web Mercator} coordinates.  These can be related easily to the tiles
+coordinate system.  If a need arises to compute an approximate geodesic
+distance between two points defined by their Web Mercator coordinates, the
+formulae given in this note may be useful.
+
+This note is placed under a Creative Commons CC-BY-SA licence.  The algorithm
+described in section \ref{secn:formula} is placed under a CC-BY licence.
+
+\section {Terminology}
+\textit{Web Mercator} is the system used for indexing the tiles on web-based
+map servers such as OpenStreetMap.  A location's coordinates are expressed as
+$(X,Y)$ where both $X$ and $Y$ lie in $[0,1]$.  In software making extensive
+use of map tiles from the web, it is particularly efficient to represent
+locations in this form.  If map tiles at zoom level $z$ are being accessed, the
+value $(2^zX)$ may be written as $t_x . f_x$, where $t_x$ is the integer
+part and $0.f_x$ is the fractional part.  $t_y$ and $f_y$ can be defined
+similarly.  Then the map tile containing the location is $(t_x,t_y)$ and the
+location is $0.f_x$ in from the left side of the tile and $0.f_y$ down from the
+top.
+
+To calculate the Web Mercator coordinates $(X,Y)$ from latitude $M$ and
+longitude $L$, in \textbf{radians} with north and east positive, evaluate
+
+\begin{align}
+  X & = \frac{1}{2}\left(1 + \frac{L}{\pi} \right) \label{eqn:wmx} \\
+  Y & = \frac{1}{2} \left(
+        1 - \frac{1}{\pi} \ln \left[
+          \tan\left(\frac{M}{2} + \frac{\pi}{4}\right)
+        \right]
+        \right)
+\end{align}
+
+These formulae can be inverted by
+
+\begin{align}
+  L &= (2X - 1)\pi \\
+  M &= \left[2\tan^{-1}\left(e^t\right)\right] - \frac{\pi}{2}
+  \label{eqn:y_to_M}
+  \intertext{where}
+  t &= (1 - 2Y)\pi
+\end{align}
+
+\section {Approximate distance formula}
+\label{secn:formula}
+
+Given two points defined in Web Mercator by $(X_0,Y_0)$ and $(X_1,Y_1)$, the
+distance $D$ between them can be approximated using the method below:
+
+\begin{align}
+  \delta_X & = X_1 - X_0 \\
+  \delta_Y & = Y_1 - Y_0 \\
+  v & = \frac{Y_0 + Y_1}{2} - \frac{1}{2} \\
+  \delta_Y ' & = \left ( J_0 + J_2 v^2 + J_4 v^4 \right) \delta_Y
+\end{align}
+
+then
+
+\begin{equation}
+  \boxed{
+    D \approx \frac{2 \pi a \sqrt{\delta_X^2 + \delta_Y'^2}}{1 + K_2 v^2 + K_4 v^4}
+  }
+\end{equation}
+
+
+where the symbols have the following meanings:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{c p{2.5in}}
+\toprule
+\textbf{Symbol} & \textbf{Meaning} \\
+\midrule
+$v$ & translated Y-coordinate of the midpoint (Equator at zero) \\
+$\delta_Y'$ & adjusted difference between the Y-coordinates \\
+$a$ & Equatorial radius of the Earth, 6378137.0 metres \\
+$J_i$, $K_i$ & suitable constants as follows \\
+$J_0$ & 0.99330562 \\
+$J_2$ & 0.18663111 \\
+$J_4$ & -1.45510549 \\
+$K_2$ & 19.42975297 \\
+$K_4$ & 74.22319781 \\
+$D$ & Estimated distance between $(X_0,Y_0)$ and $(X_1,Y_1)$, in metres \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The approximation is accurate to 0.1\% up to 71 degrees latitude and for
+distances up to at least (200 $\cos(M)$) km.  As the formulae are intended for
+machine implementation, the $J_i$, $K_i$ values are as obtained in the method
+described below, without rounding.
+
+\section {Derivation}
+For a spherical Earth, the scaling to apply to $\delta_X$ would be the distance
+round the parallel of latitude $M$, which is $2\pi a \cos M$.  Since the Earth
+is ellipsoidal rather than spherical, the flattening at the poles needs to be
+included too.  If $e$ is the eccentricity of the Earth, the scaling $S_X$ to
+apply to $\delta_X$ is given by
+
+\begin{align}
+S_X & = \frac {2\pi a \cos M}{\sqrt{1 - e^2 \sin^2M}}
+\end{align}
+
+The latitude $M$ is not directly available, because the calculation is starting
+from $(X,Y)$ Web Mercator coordinates.  So the objective is to approximate
+$S_X(Y)$ given $Y$, defined by the equations
+
+\begin{align}
+t(Y) &= (1 - 2Y)\pi \\
+M(Y) &= \left[2\tan^{-1}\left(e^t(Y)\right)\right] - \frac{\pi}{2} \\
+S_X(Y) & = \frac {2\pi a \cos M(Y)}{\sqrt{1 - e^2 \left(\sin M(Y)\right)^2}}
+\end{align}
+
+Initially the approximation was attempted for $Y$ anywhere in $[0,1]$.  The
+approximation was poor near to the polar regions.  Attempting to reduce this
+inaccuracy impacted the accuracy at lower latitude.  Therefore the
+approximation was restricted to $Y$ in the range $[0.215,0.785]$.  This covers
+the range of latitudes up to about 71 degrees north and south.
+
+A degree-n polynomial was fitted to this function.  The procedure was to
+calculate the Chebyshev nodes for degree-n in the range $[-1,+1]$, map these
+into the interval $[0.215,0.785]$ via the mapping $r_n \mapsto (0.5 +
+0.285r_n)$, then find the coefficients by solving a set of n+1 linear
+equations. The target is to match the scaling $S_X(Y)$ exactly at the chosen
+points.
+
+The Chebyshev nodes are given by
+\begin{align}
+  r_i & = \cos \left(
+  \frac{\left(2i-1\right)\pi}{2n}
+  \right)
+\end{align}
+
+for $i = 1 \cdots n$.  So for $n=5$, the nodes and the corresponding Web
+Mercator $Y_i$ values are given by
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{c c c}
+    \toprule
+    $i$ & $r_i$ & $Y_i$ \\
+    \midrule
+    1 & 0.95106 & 0.77105 \\
+    2 & 0.58779 & 0.66752\\
+    3 & 0.00000 & 0.50000 \\
+    4 & -0.58779 & 0.33248 \\
+    5 & -0.95106  & 0.22895 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Unfortunately as n was increased, the coefficients became larger and larger,
+indicating that $S_X$ was a difficult function to approximate with a
+polynomial.  However, by re-casting $S_X$ as
+
+\begin{align}
+S_X'(Y) & = \frac {\sqrt{1 - e^2 \left(\sin M(Y)\right)^2}}{\cos M(Y)} \\
+S_X(Y) & = \frac {2\pi a}{S_X'(Y)}
+\end{align}
+
+it was observed that $1/S_X'(Y)$ has a bell shape, which suggested that an
+approximation of a form like
+
+\begin{align}
+\frac{1}{S_X'(Y)} & \approx \frac{1}{1 + K\Psi^2}
+\end{align}
+
+might be useful for some appropriate $\Psi$.  This means that $S_X'(Y)$ itself
+can be approximated by a polynomial.  The expression is symmetrical in
+latitude, so we can substitute $\Psi = (Y - 0.5)$,  given that $Y = 0.5$ at the
+Equator.  By trial and error, the value $K$ is found to be around 19.  After
+solving the set of 5 linear equations to give an exact fit at the Chebyshev
+nodes, a polynomial approximation in $\Psi$ with only even powers is reached,
+as follows:
+
+\begin{align}
+S_X'(Y) & \approx 1 + K_2 \Psi^2 + K_4 \Psi^4
+\end{align}
+
+This is the source of the $K_2$ and $K_4$ constants earlier.  Obviously the
+$K_1$ and $K_3$ terms solve very close to zero --- a useful cross-check on the
+implementation.
+
+If the same scaling is applied to a pure $\delta_Y$ displacement, the match
+against the exact distance given by Vincenty's formulae \cite{vincenty} is much
+worse than for pure $\delta_X$ terms.  An additional scaling to apply to the
+$\delta_Y$ term was sought to see if this would correct the error.  The scaling
+required is also symmetrical about the Equator.  It turns out that the three
+even-order terms of a different quartic in $\Psi$ with suitable coefficients
+give a satisfactory approximation.  Fitting at the same $Y_i$ values as before
+yields the $J_0$, $J_2$ and $J_4$ values given earlier to compute $\delta_Y'$
+from $\delta_Y$.  Pythagoras's theorem is then used to aggregate the $\delta_X$
+and $\delta_Y'$ contributions to deal with arbitary azimuths of the
+displacement.  This was found to introduce negligible further errors.
+
+The source code used to generate and analyse this method can be found at
+\cite{source}.
+
+\begin{thebibliography}{99}
+  \bibitem {vincenty} \url{http://en.wikipedia.org/wiki/Vincenty%27s_formulae}
+    \bibitem {source} \url{https://github.com/rc0/wmen}
+  \bibitem {app} \url{https://github.com/rc0/logmygsm}
+\end{thebibliography}
+
+\end{document}
+
+% vim:et:sw=2:sts=2:ts=2:ht=2
+

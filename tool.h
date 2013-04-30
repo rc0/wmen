@@ -53,6 +53,8 @@ extern void osgb36_to_wgs84(const struct llh *in, struct llh *out);
 extern void itrs2005_to_etrs89(const struct llh *in, double year, struct llh *out);
 extern void osgb36_to_grid(const struct llh *in, struct en *out);
 extern void wgs84_to_grid(const struct llh *in, struct en *out);
+
+/* Degrees lat/lon */
 extern void wgs84_to_mxy(const struct llh *in, struct mxy *out);
 extern void mxy_to_wgs84(const struct mxy *in, struct llh *out);
 
@@ -67,4 +69,8 @@ extern void solve2(Matrix m, int n, long double *l0, long double *l1, long doubl
 
 extern void estrin(Matrix m, int n, const char *vr, const char *vc, char *res);
 extern void estrin2(SMatrix m, int nx, int ny, const char *vr, const char *vc, const char *res);
+
+extern double llh_rad_to_metres(const struct llh *p1, const struct llh *p2);
+extern double llh_deg_to_metres(const struct llh *p1, const struct llh *p2);
+
 #endif

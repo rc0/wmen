@@ -48,6 +48,12 @@ create_picture_2: create_picture_2.c tikz.o contour.o
 etrs89: etrs89.o coords.o uk.o solve2.o contour.o tikz.o svg.o osxx02.o
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
+distance2: distance2.o solve.o coords.o vincenty.o
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+distance: distance.o solve.o
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
 %.o : %.c tool.h contour.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
