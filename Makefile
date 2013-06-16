@@ -51,7 +51,16 @@ etrs89: etrs89.o coords.o uk.o solve2.o contour.o tikz.o svg.o osxx02.o
 distance2: distance2.o solve.o coords.o vincenty.o
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
+distance3: distance3.o solve.o coords.o vincenty.o remez.o
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+distance4: distance4.o solve.o coords.o vincenty.o remez.o simplex.o
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
 distance: distance.o solve.o
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+find_atan2: find_atan2.o solve.o remez.o
 	$(CC) $(CFLAGS) -o $@ $^ -lm
 
 %.o : %.c tool.h contour.h
@@ -86,6 +95,12 @@ picture1.tex : create_picture
 
 picture2.tex : create_picture_2
 	./create_picture_2 > $@
+
+remez_test: remez_test.o solve.o
+	$(CC) $(CFLAGS) -o $@ $^ -lm
+
+remez_test.o : remez.c tool.h
+	$(CC) $(CFLAGS) -DTEST=1 -c $< -o $@
 
 pdf: wmen_paper.pdf
 
